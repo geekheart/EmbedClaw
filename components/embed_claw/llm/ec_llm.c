@@ -12,7 +12,7 @@
 /* ==================== [Includes] ========================================== */
 
 #include "ec_llm.h"
-#include "ec_config.h"
+#include "ec_config_internal.h"
 #include "ec_llm_openai.h"
 #include "esp_log.h"
 

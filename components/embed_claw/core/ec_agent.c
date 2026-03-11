@@ -12,7 +12,7 @@
 /* ==================== [Includes] ========================================== */
 
 #include "ec_agent.h"
-#include "ec_config.h"
+#include "ec_config_internal.h"
 #include "llm/ec_llm.h"
 
 #include "ec_memory.h"

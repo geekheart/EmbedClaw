@@ -18,7 +18,7 @@
 #include "core/ec_skill_loader.h"
 #include "core/ec_tools.h"
 #include "llm/ec_llm.h"
-#include "ec_config.h"
+#include "ec_config_internal.h"
 
 #include <stdlib.h>
 #include <string.h>

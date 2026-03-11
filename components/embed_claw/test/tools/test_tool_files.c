@@ -4,7 +4,7 @@
 #include "unity.h"
 
 #include "core/ec_tools.h"
-#include "ec_config.h"
+#include "ec_config_internal.h"
 #include "support/ec_test_hooks.h"
 
 static void register_tools_for_file_tests(void)

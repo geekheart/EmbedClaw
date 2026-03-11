@@ -4,7 +4,7 @@
 
 #include "unity.h"
 
-#include "ec_config.h"
+#include "ec_config_internal.h"
 #include "core/ec_memory.h"
 #include "support/ec_test_hooks.h"
 

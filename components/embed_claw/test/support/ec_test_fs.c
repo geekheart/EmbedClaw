@@ -2,7 +2,7 @@
 
 #include "esp_spiffs.h"
 
-#include "ec_config.h"
+#include "ec_config_internal.h"
 #include "support/ec_test_hooks.h"
 
 static bool s_spiffs_mounted = false;

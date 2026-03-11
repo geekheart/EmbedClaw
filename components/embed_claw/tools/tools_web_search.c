@@ -12,7 +12,7 @@
 /* ==================== [Includes] ========================================== */
 
 #include "core/ec_tools.h"
-#include "ec_config.h"
+#include "ec_config_internal.h"
 
 #include <stdbool.h>
 #include <string.h>

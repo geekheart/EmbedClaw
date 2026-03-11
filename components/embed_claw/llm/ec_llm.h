@@ -19,7 +19,7 @@
 #include "esp_err.h"
 #include "cJSON.h"
 
-#include "ec_config.h"
+#include "ec_config_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

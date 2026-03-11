@@ -38,7 +38,7 @@ static const char *TAG = "channel";
  * custom drivers can register extra providers without colliding with the
  * compile-time enum count.
  */
-#define EC_CHANNEL_REGISTRY_CAPACITY 8
+#define EC_CHANNEL_REGISTRY_CAPACITY _EC_CHANNEL_ENMU_MAX
 
 static const ec_channel_t *s_channel[EC_CHANNEL_REGISTRY_CAPACITY] = {0};
 

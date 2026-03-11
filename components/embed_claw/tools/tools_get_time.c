@@ -11,7 +11,7 @@
 
 /* ==================== [Includes] ========================================== */
 
-#include "ec_config.h"
+#include "ec_config_internal.h"
 
 #include <stdio.h>
 #include <string.h>

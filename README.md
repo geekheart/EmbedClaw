@@ -132,8 +132,8 @@ flowchart LR
 │   ├── tools/                    # Tool implementations
 │   ├── channel/                 # Feishu / WebSocket channels
 │   ├── embed_claw.c             # System startup entry
-│   └── ec_config.h              # Build-time configuration
-├── spiffs_data/                  # Default SPIFFS image content
+│   └── ec_config_internal.h     # Built-in defaults; local overrides live in main/ec_config.h
+├── spiffs_data/                 # Default SPIFFS image content
 └── scripts/                     # WebSocket test and Feishu relay scripts
 ```
 
@@ -187,11 +187,12 @@ The default target is `esp32s3`. The build packs `spiffs_data/` with `spiffs_cre
 
 ### 1. Configure keys and platform
 
-Configuration is build-time, mainly in:
+Build-time configuration is layered:
 
-- [`components/embed_claw/ec_config.h`](components/embed_claw/ec_config.h)
+- [`components/embed_claw/ec_config_internal.h`](components/embed_claw/ec_config_internal.h) provides repo defaults and empty secret placeholders.
+- Create local [`main/ec_config.h`](main/ec_config.h) for project-specific overrides. Define only the macros you want to override. The build injects this header into `embed_claw`, so sensitive values do not need to live in the shared component tree.
 
-Set at least:
+Create `main/ec_config.h` if needed, then set at least:
 
 ```c
 #define EC_SECRET_SEARCH_KEY        "YOUR_TAVILY_API_KEY"
@@ -362,7 +363,7 @@ Under “Event subscription”:
 
 #### 4. Put credentials in the project
 
-Edit [`components/embed_claw/ec_config.h`](components/embed_claw/ec_config.h):
+Create or edit [`main/ec_config.h`](main/ec_config.h):
 
 ```c
 #define EC_SECRET_FEISHU_APP_ID     "cli_xxx"
@@ -527,7 +528,9 @@ With clear boundaries, natural extensions include:[TODE.md](TODO.md)
 
 ### 1. Build-time configuration
 
-For open-source distribution, default keys in the repo are empty. Before running, set:
+For open-source distribution, repo defaults keep secret fields empty. Put real keys in local `main/ec_config.h` rather than editing `components/embed_claw/ec_config_internal.h`. `main/ec_config.h` is ignored by Git by default.
+
+Before running, set:
 
 - DashScope / Qwen API key  
 - Tavily API key  
