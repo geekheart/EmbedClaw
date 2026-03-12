@@ -6,7 +6,7 @@
 
 **Decouple LLM, Tools, Agent, and Channels—then pack them onto a single ESP32-S3.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)![ESP32-S3](https://img.shields.io/badge/MCU-ESP32--S3-ff6a00)![LLM](https://img.shields.io/badge/LLM-Qwen%20via%20DashScope-0f766e)![Channel](https://img.shields.io/badge/Channel-Feishu%20%7C%20WebSocket-2563eb)![Search](https://img.shields.io/badge/Search-Tavily-111827)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)![ESP32-S3](https://img.shields.io/badge/MCU-ESP32--S3-ff6a00)![LLM](https://img.shields.io/badge/LLM-Qwen%20via%20DashScope-0f766e)![Channel](https://img.shields.io/badge/Channel-Feishu%20%7C%20WebSocket%20%7C%20QQBot-2563eb)![Search](https://img.shields.io/badge/Search-Tavily-111827)
 
 </div>
 
@@ -66,7 +66,7 @@ It’s a working “embedded Agent base” you can extend.
 |--------|------------------------|--------|
 | LLM | Qwen `qwen-plus` | Via Alibaba DashScope OpenAI-compatible API |
 | Web Search | Tavily Search API | For news, weather, and real-time info |
-| Chat Channel | Feishu, WebSocket | Feishu long connection in/out; local WebSocket chat |
+| Chat Channel | Feishu, WebSocket, QQBot | Feishu long connection, local WebSocket chat, official QQBot gateway |
 | Agent | ReAct tool loop | Model can call tools, read results, then continue |
 | Long-term memory | `/spiffs/memory/MEMORY.md` | User profile, preferences, stable facts |
 | Short-term memory | `/spiffs/session/se_<hash>.jsonl` | Recent conversation for current session |
@@ -104,8 +104,10 @@ You can add more Skills as Markdown under `/spiffs/skills/*.md`; the Agent picks
 flowchart LR
     U[User] --> F[Feishu Channel]
     U --> W[WebSocket Channel]
+    U --> Qc[QQBot Channel]
     F --> A[Agent Loop]
     W --> A
+    Qc --> A
     A --> L[LLM Provider]
     L --> Q[Qwen via DashScope]
     A --> T[Tool Registry]
@@ -119,6 +121,7 @@ flowchart LR
     A --> O[Outbound Dispatcher]
     O --> F
     O --> W
+    O --> Qc
 ```
 
 ## Directory layout
@@ -130,11 +133,11 @@ flowchart LR
 │   ├── core/                     # Agent, Memory, Session, Skill Loader, Tool Registry
 │   ├── llm/                      # LLM provider abstraction and implementations
 │   ├── tools/                    # Tool implementations
-│   ├── channel/                 # Feishu / WebSocket channels
+│   ├── channel/                 # Feishu / WebSocket / QQBot channels
 │   ├── embed_claw.c             # System startup entry
 │   └── ec_config_internal.h     # Built-in defaults; local overrides live in main/ec_config.h
 ├── spiffs_data/                 # Default SPIFFS image content
-└── scripts/                     # WebSocket test and Feishu relay scripts
+└── scripts/                     # WebSocket test script and test-app helpers
 ```
 
 ## Runtime flow
@@ -209,6 +212,18 @@ Default LLM URL (DashScope OpenAI-compatible):
 ```
 
 If you skip Tavily or Feishu for now, you only need the Qwen-related keys.
+
+Optional channel toggles:
+
+```c
+#define EC_FEISHU_ENABLE 0
+#define EC_QQ_ENABLE     1
+#define EC_QQ_APP_ID     "YOUR_QQ_APP_ID"
+#define EC_QQ_CLIENT_SECRET "YOUR_QQ_CLIENT_SECRET"
+```
+
+QQ uses the official QQBot route in this repo: `AppID + ClientSecret -> access_token -> /gateway -> websocket`.
+The device acts as a WebSocket client, so the device itself does not need a public IP.
 
 ### 2. Build
 
@@ -393,6 +408,67 @@ The repo includes [`scripts/feishu_relay.py`](scripts/feishu_relay.py) for:
 - Debugging Feishu and the device Agent separately
 
 For normal use, the built-in Feishu long-connection implementation is recommended.
+
+## QQBot integration
+
+EmbedClaw also includes an official QQBot channel. This implementation follows the same route as the OpenClaw QQBot plugin instead of a OneBot bridge.
+
+### What the QQ channel does
+
+1. Uses `EC_QQ_APP_ID` and `EC_QQ_CLIENT_SECRET`
+2. Calls `https://bots.qq.com/app/getAppAccessToken`
+3. Calls `https://api.sgroup.qq.com/gateway`
+4. Connects to the QQ gateway over WebSocket
+5. Sends `IDENTIFY`, keeps heartbeat, and handles dispatch events
+6. Sends replies back over QQ official REST APIs
+
+### Supported inbound events
+
+- `C2C_MESSAGE_CREATE`
+- `GROUP_AT_MESSAGE_CREATE`
+- `AT_MESSAGE_CREATE`
+
+These map to the following `chat_id` formats inside EmbedClaw:
+
+- `c2c:<openid>`
+- `group:<group_openid>`
+- `channel:<channel_id>`
+
+### Minimal config
+
+Add to [`main/ec_config.h`](main/ec_config.h):
+
+```c
+#define EC_QQ_ENABLE        1
+#define EC_QQ_APP_ID        "YOUR_QQ_APP_ID"
+#define EC_QQ_CLIENT_SECRET "YOUR_QQ_CLIENT_SECRET"
+```
+
+Optional:
+
+```c
+#define EC_QQ_INTENTS       (1 << 25)
+#define EC_QQ_RECONNECT_MS  10000
+```
+
+### Notes
+
+- The current implementation focuses on text messages first.
+- The device does not expose a Webhook endpoint.
+- If QQ is enabled but the credentials are invalid, startup logs will show the token/gateway failure path.
+
+See the official entry page: <https://q.qq.com/qqbot/openclaw/index.html>
+
+## Testing
+
+There are two test layers in this repo:
+
+- Firmware build check: `idf.py build`
+- `embed_claw` unit-test-app build: `./scripts/run_unit_tests.sh build`
+
+Detailed board-side test instructions live in [`components/embed_claw/test/README.md`](components/embed_claw/test/README.md).
+
+GitHub Actions currently does compile-only checks on both the project firmware and the `unit-test-app`. It does not run hardware-attached tests in CI.
 
 ## Persona and memory
 
