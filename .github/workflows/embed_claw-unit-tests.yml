@@ -37,6 +37,12 @@ jobs:
         with:
           version: v5.5.2
 
+      - name: Use sdkconfig.defaults
+        run: cp sdkconfig.defaults.esp32s3 sdkconfig.defaults
+
+      - name: Set target esp32s3
+        run: idf.py set-target esp32s3
+
       - name: Build project firmware
         run: idf.py build
 
