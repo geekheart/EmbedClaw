@@ -233,7 +233,7 @@ static esp_err_t ws_decode_message(int fd, const char *payload_json, ec_msg_t *m
     cJSON *content;
     cJSON *chan;
     cJSON *cid;
-    bool is_feishu;
+    const char *target_channel;
     const char *chat_id;
 
     if (!payload_json || !msg) {
@@ -255,27 +255,30 @@ static esp_err_t ws_decode_message(int fd, const char *payload_json, ec_msg_t *m
 
     client = find_client_by_fd(fd);
     chan = cJSON_GetObjectItem(root, "channel");
-    is_feishu = (chan && cJSON_IsString(chan) && strcmp(chan->valuestring, "feishu") == 0);
+    target_channel = (chan && cJSON_IsString(chan) && chan->valuestring[0] != '\0')
+                     ? chan->valuestring
+                     : EC_CHAN_WEBSOCKET;
 
     chat_id = client ? client->chat_id : "ws_unknown";
     cid = cJSON_GetObjectItem(root, "chat_id");
     if (cid && cJSON_IsString(cid)) {
         chat_id = cid->valuestring;
-        if (client) {
+        if (client && strcmp(target_channel, EC_CHAN_WEBSOCKET) == 0) {
             strncpy(client->chat_id, chat_id, sizeof(client->chat_id) - 1);
         }
     }
 
-    if (is_feishu && (!cid || !cJSON_IsString(cid))) {
+    if (ec_channel_requires_chat_id(target_channel) &&
+        !ec_channel_validate_chat_id(target_channel, chat_id)) {
         cJSON_Delete(root);
         return ESP_ERR_INVALID_ARG;
     }
 
     ESP_LOGI(TAG, "WS message from %s (%s): %.40s...",
-             chat_id, is_feishu ? "feishu" : "ws", content->valuestring);
+             chat_id, target_channel, content->valuestring);
 
     memset(msg, 0, sizeof(*msg));
-    strncpy(msg->channel, is_feishu ? EC_CHAN_FEISHU : EC_CHAN_WEBSOCKET, sizeof(msg->channel) - 1);
+    strncpy(msg->channel, target_channel, sizeof(msg->channel) - 1);
     strncpy(msg->chat_id, chat_id, sizeof(msg->chat_id) - 1);
     msg->content = strdup(content->valuestring);
     cJSON_Delete(root);
