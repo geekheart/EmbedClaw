@@ -13,6 +13,7 @@
 
 #include "core/ec_tools.h"
 #include "core/ec_agent.h"
+#include "core/ec_channel.h"
 #include "ec_config_internal.h"
 
 #include <stdio.h>
@@ -82,8 +83,8 @@ static const ec_tools_t s_cron_add = {
     "\"interval_s\":{\"type\":\"integer\",\"description\":\"Interval in seconds (required for 'every')\"},"
     "\"at_epoch\":{\"type\":\"integer\",\"description\":\"Unix timestamp to fire at (required for 'at')\"},"
     "\"message\":{\"type\":\"string\",\"description\":\"Message to inject when the job fires, triggering an agent turn\"},"
-    "\"channel\":{\"type\":\"string\",\"description\":\"Optional reply channel (e.g. 'feishu'). If omitted, current turn channel is used when available\"},"
-    "\"chat_id\":{\"type\":\"string\",\"description\":\"Optional reply chat_id. Required when channel='feishu'. If omitted during a feishu turn, current chat_id is used\"}"
+    "\"channel\":{\"type\":\"string\",\"description\":\"Optional reply channel (e.g. 'feishu' or 'qq'). If omitted, current turn channel is used when available\"},"
+    "\"chat_id\":{\"type\":\"string\",\"description\":\"Optional reply chat_id. Required for channels that need an explicit destination such as 'feishu' and 'qq'\"}"
     "},"
     "\"required\":[\"name\",\"schedule_type\",\"message\"]}",
     .execute = ec_tool_cron_add_execute,
@@ -189,14 +190,13 @@ static bool cron_sanitize_destination(ec_cron_job_t *job)
         changed = true;
     }
 
-    if (strcmp(job->channel, EC_CHAN_FEISHU) == 0) {
-        if (job->chat_id[0] == '\0' || strcmp(job->chat_id, "cron") == 0) {
-            ESP_LOGW(TAG, "Cron job %s has invalid feishu chat_id, fallback to system:cron",
-                     job->id[0] ? job->id : "<new>");
-            strncpy(job->channel, EC_CHAN_SYSTEM, sizeof(job->channel) - 1);
-            strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
-            changed = true;
-        }
+    if (ec_channel_requires_chat_id(job->channel) &&
+        !ec_channel_validate_chat_id(job->channel, job->chat_id)) {
+        ESP_LOGW(TAG, "Cron job %s has invalid %s chat_id, fallback to system:cron",
+                 job->id[0] ? job->id : "<new>", job->channel);
+        strncpy(job->channel, EC_CHAN_SYSTEM, sizeof(job->channel) - 1);
+        strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
+        changed = true;
     } else if (job->chat_id[0] == '\0') {
         strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
         changed = true;
@@ -463,10 +463,10 @@ static esp_err_t ec_tool_cron_add_execute(const char *input_json, char *output, 
     if (channel) strncpy(job.channel, channel, sizeof(job.channel) - 1);
     if (chat_id) strncpy(job.chat_id, chat_id, sizeof(job.chat_id) - 1);
 
-    if (strcmp(job.channel, EC_CHAN_FEISHU) == 0 &&
-        (job.chat_id[0] == '\0' || strcmp(job.chat_id, "cron") == 0)) {
+    if (ec_channel_requires_chat_id(job.channel) &&
+        !ec_channel_validate_chat_id(job.channel, job.chat_id)) {
         snprintf(output, output_size,
-                 "Error: cron_add with channel='feishu' requires a valid chat_id");
+                 "Error: cron_add with channel='%s' requires a valid chat_id", job.channel);
         cJSON_Delete(root);
         return ESP_ERR_INVALID_ARG;
     }
@@ -615,4 +615,3 @@ void ec_tools_cron_configure_for_test(bool skip_task_start, bool skip_persist)
     s_skip_task_start_for_test = skip_task_start;
     s_skip_persist_for_test = skip_persist;
 }
-

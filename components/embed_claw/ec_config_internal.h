@@ -62,6 +62,10 @@ extern "C" {
 #define EC_WS_MAX_CLIENTS           4
 #endif
 
+#ifndef EC_WS_ENABLE
+#define EC_WS_ENABLE                1
+#endif
+
 #ifndef EC_MAX_CRON_JOBS
 #define EC_MAX_CRON_JOBS            16
 #endif
@@ -174,12 +178,36 @@ extern "C" {
 #define EC_SECRET_FEISHU_APP_SECRET ""
 #endif
 
+#ifndef EC_FEISHU_ENABLE
+#define EC_FEISHU_ENABLE            1
+#endif
+
 #ifndef EC_FEISHU_WS_URL_MAX
 #define EC_FEISHU_WS_URL_MAX        256
 #endif
 
 #ifndef EC_FEISHU_PING_INTERVAL_S
 #define EC_FEISHU_PING_INTERVAL_S   120
+#endif
+
+#ifndef EC_QQ_ENABLE
+#define EC_QQ_ENABLE                0
+#endif
+
+#ifndef EC_QQ_APP_ID
+#define EC_QQ_APP_ID                ""
+#endif
+
+#ifndef EC_QQ_CLIENT_SECRET
+#define EC_QQ_CLIENT_SECRET         ""
+#endif
+
+#ifndef EC_QQ_RECONNECT_MS
+#define EC_QQ_RECONNECT_MS          10000
+#endif
+
+#ifndef EC_QQ_INTENTS
+#define EC_QQ_INTENTS               (1 << 25)
 #endif
 
 /* ==================== [Typedefs] ========================================== */

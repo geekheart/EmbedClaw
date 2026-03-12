@@ -14,6 +14,8 @@
 
 /* ==================== [Includes] ========================================== */
 
+#include <stdbool.h>
+
 #include "esp_err.h"
 #include "ec_agent.h"
 
@@ -81,6 +83,16 @@ esp_err_t ec_channel_start(const char *channel);
  *  - ESP_OK 消息发送成功
  */
 esp_err_t ec_channel_send(const ec_msg_t *msg);
+
+/**
+ * @brief 指定 channel 是否要求显式 chat_id
+ */
+bool ec_channel_requires_chat_id(const char *channel);
+
+/**
+ * @brief 校验 channel 对应的 chat_id 格式
+ */
+bool ec_channel_validate_chat_id(const char *channel, const char *chat_id);
 
 /* ==================== [Macros] ============================================ */
 

@@ -2,3 +2,4 @@
 
 EC_CHANNEL_REG(ws)
 EC_CHANNEL_REG(feishu)
+EC_CHANNEL_REG(qq)

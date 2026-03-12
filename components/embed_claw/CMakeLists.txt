@@ -13,6 +13,7 @@ idf_component_register(
         "tools/tools_get_time.c"
         "tools/tools_web_search.c"
         "channel/ec_channel_feishu.c"
+        "channel/ec_channel_qq.c"
         "channel/ec_channel_ws.c"
         "embed_claw.c"
     INCLUDE_DIRS
